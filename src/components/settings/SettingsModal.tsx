@@ -10,12 +10,15 @@ import {
   PanResponder,
   Platform,
   Alert,
+  TextInput,
+  ScrollView,
 } from 'react-native';
 import BaselineList from '../baselines/BaselineList';
 import Icon from 'react-native-vector-icons/Ionicons';
 import DocumentPicker from 'react-native-document-picker';
 import RNFS from 'react-native-fs';
-import { useBaselines } from '../baselines/BaselineProvider';
+import { useBaselines } from '../baselines/BaseLineProvider';
+import { useUser } from '../user/UserProvider';
 import { Workout } from '../../types';
 import RNBlobUtil from 'react-native-blob-util';
 
@@ -36,6 +39,19 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
 }) => {
   const slideAnim = useRef(new Animated.Value(screenWidth)).current;
   const { baselines, setBaselines } = useBaselines();
+  const { userConfig, setUsername, setApiUrl } = useUser();
+  
+  // Local state for form inputs
+  const [tempUsername, setTempUsername] = useState('');
+  const [tempApiUrl, setTempApiUrl] = useState('');
+
+  // Initialize form with current user config
+  useEffect(() => {
+    if (userConfig) {
+      setTempUsername(userConfig.username || '');
+      setTempApiUrl(userConfig.apiUrl || '');
+    }
+  }, [userConfig, visible]);
 
 
   useEffect(() => {
@@ -82,6 +98,21 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
   });
 
   if (!visible) return null;
+
+  // Save user configuration
+  const handleSaveUserConfig = async () => {
+    try {
+      if (tempUsername.trim()) {
+        await setUsername(tempUsername.trim());
+      }
+      if (tempApiUrl.trim()) {
+        await setApiUrl(tempApiUrl.trim());
+      }
+      Alert.alert('Success', 'User configuration saved successfully!');
+    } catch (error) {
+      Alert.alert('Error', 'Failed to save user configuration. Please try again.');
+    }
+  };
 
   const handleImport = async () => {
     try {
@@ -161,24 +192,61 @@ const SettingsModal: React.FC<SettingsModalProps> = ({
           </TouchableOpacity>
 
           <Text style={styles.modalHeader}>Settings</Text>
-          <Text style={styles.subheader}>Baselines</Text>
-          <BaselineList
-            baselines={baselines}
-            onUpdateBaseline={(key: string, value: number) => {
-              const updatedBaselines = { ...baselines, [key]: value };
-              setBaselines(updatedBaselines);
-            }}
-          />
+          
+          {/* User Configuration Section */}
+          <ScrollView style={styles.scrollContent}>
+            <Text style={styles.subheader}>User Configuration</Text>
+            
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Username:</Text>
+              <TextInput
+                style={styles.textInput}
+                value={tempUsername}
+                onChangeText={setTempUsername}
+                placeholder="Enter your username"
+                placeholderTextColor="#999"
+                autoCapitalize="none"
+                autoCorrect={false}
+              />
+            </View>
 
-          {/* Import Workouts Button */}
-          <TouchableOpacity style={styles.modalButton} onPressOut={handleImport}>
-            <Text style={styles.modalButtonText}>Import Workouts</Text>
-          </TouchableOpacity>
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>API URL:</Text>
+              <TextInput
+                style={styles.textInput}
+                value={tempApiUrl}
+                onChangeText={setTempApiUrl}
+                placeholder="Enter API URL"
+                placeholderTextColor="#999"
+                autoCapitalize="none"
+                autoCorrect={false}
+                keyboardType="url"
+              />
+            </View>
 
-          {/* Reset Workouts Button */}
-          <TouchableOpacity style={styles.resetButton} onPressOut={resetWorkouts}>
-            <Text style={styles.resetButtonText}>Reset Workouts</Text>
-          </TouchableOpacity>
+            <TouchableOpacity style={styles.saveButton} onPressOut={handleSaveUserConfig}>
+              <Text style={styles.saveButtonText}>Save Configuration</Text>
+            </TouchableOpacity>
+
+            <Text style={styles.subheader}>Baselines</Text>
+            <BaselineList
+              baselines={baselines}
+              onUpdateBaseline={(key: string, value: number) => {
+                const updatedBaselines = { ...baselines, [key]: value };
+                setBaselines(updatedBaselines);
+              }}
+            />
+
+            {/* Import Workouts Button */}
+            <TouchableOpacity style={styles.modalButton} onPressOut={handleImport}>
+              <Text style={styles.modalButtonText}>Import Workouts</Text>
+            </TouchableOpacity>
+
+            {/* Reset Workouts Button */}
+            <TouchableOpacity style={styles.resetButton} onPressOut={resetWorkouts}>
+              <Text style={styles.resetButtonText}>Reset Workouts</Text>
+            </TouchableOpacity>
+          </ScrollView>
         </Animated.View>
       </View>
     </Modal>
@@ -199,7 +267,10 @@ const styles = StyleSheet.create({
     width: '80%', // Adjust modal width as needed
     backgroundColor: 'white',
     padding: 20,
-    justifyContent: 'space-between', // Space elements appropriately
+    justifyContent: 'flex-start', // Changed to flex-start to accommodate scroll
+  },
+  scrollContent: {
+    flex: 1,
   },
   closeButton: {
     position: 'absolute',
@@ -211,6 +282,7 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: 'bold',
     marginBottom: 20,
+    marginTop: 40, // Add top margin to account for close button
     textAlign: 'center',
     color: 'black'
   },
@@ -218,6 +290,36 @@ const styles = StyleSheet.create({
     fontSize: 20,
     marginVertical: 10,
     color: 'black'
+  },
+  inputContainer: {
+    marginBottom: 15,
+  },
+  inputLabel: {
+    fontSize: 16,
+    marginBottom: 5,
+    color: 'black',
+    fontWeight: '500',
+  },
+  textInput: {
+    borderWidth: 1,
+    borderColor: '#ddd',
+    borderRadius: 8,
+    padding: 12,
+    fontSize: 16,
+    color: 'black',
+    backgroundColor: '#f9f9f9',
+  },
+  saveButton: {
+    backgroundColor: '#4CAF50',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 20,
+  },
+  saveButtonText: {
+    color: 'white',
+    fontSize: 16,
+    textAlign: 'center',
+    fontWeight: '600',
   },
   modalButton: {
     backgroundColor: '#6b6bff',
@@ -235,6 +337,7 @@ const styles = StyleSheet.create({
     padding: 10,
     borderRadius: 5,
     marginTop: 20,
+    marginBottom: 20,
     alignSelf: 'stretch', // Make it span the width
   },
   resetButtonText: {
