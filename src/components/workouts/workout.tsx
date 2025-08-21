@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Button, StyleSheet, ScrollView } from 'react-native';
 import { useWorkouts } from './WorkoutProvider';
-import { useBaselines } from '../baselines/BaselineProvider';
+import { useBaselines } from '../baselines/BaseLineProvider';
 import { calculateWeight } from './WorkoutUtils';
 import WorkoutBlock from './WorkoutBlock';
 import { RootStackParamList } from '../../App';

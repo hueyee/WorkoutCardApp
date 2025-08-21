@@ -1,14 +1,17 @@
 import React from 'react';
-import { BaselineProvider } from './baselines/BaselineProvider';
+import { BaselineProvider } from './baselines/BaseLineProvider';
 import { WorkoutProvider } from './workouts/WorkoutProvider';
+import { UserProvider } from './user/UserProvider';
 
 const Providers: React.FC<{ children: React.ReactNode }> = ({ children }) => {
   return (
-    <BaselineProvider>
-      <WorkoutProvider>
-        {children}
-      </WorkoutProvider>
-    </BaselineProvider>
+    <UserProvider>
+      <BaselineProvider>
+        <WorkoutProvider>
+          {children}
+        </WorkoutProvider>
+      </BaselineProvider>
+    </UserProvider>
   );
 };
 
